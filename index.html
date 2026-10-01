@@ -1,14 +1,810 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>HWC Offline Test</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta name="theme-color" content="#0b57d0">
+
+  <title>HWC Online Attendance</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f1f5f9;
+      color: #1f2937;
+    }
+
+    .header {
+      background: #0b57d0;
+      color: white;
+      padding: 22px 18px;
+      text-align: center;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 26px;
+    }
+
+    .header p {
+      margin: 7px 0 0;
+      font-size: 15px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 0 15px 30px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 18px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+    }
+
+    .status {
+      text-align: center;
+      padding: 12px;
+      border-radius: 10px;
+      background: #dcfce7;
+      color: #166534;
+      font-weight: bold;
+      margin-bottom: 18px;
+    }
+
+    .status.offline {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .staff-info {
+      font-size: 17px;
+      line-height: 1.7;
+    }
+
+    .staff-info strong {
+      color: #0b57d0;
+    }
+
+    .attendance-option {
+      display: block;
+      border: 2px solid #d1d5db;
+      border-radius: 14px;
+      padding: 16px;
+      margin: 12px 0;
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .attendance-option:hover {
+      border-color: #0b57d0;
+    }
+
+    .attendance-option input {
+      transform: scale(1.4);
+      margin-right: 12px;
+    }
+
+    label.field-label {
+      display: block;
+      font-weight: bold;
+      margin-top: 15px;
+      margin-bottom: 7px;
+    }
+
+    input[type="text"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 13px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 16px;
+    }
+
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .submit-button {
+      width: 100%;
+      border: none;
+      border-radius: 12px;
+      padding: 16px;
+      background: #0b57d0;
+      color: white;
+      font-size: 19px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .submit-button:active {
+      transform: scale(0.98);
+    }
+
+    .gps-button {
+      width: 100%;
+      border: none;
+      border-radius: 12px;
+      padding: 14px;
+      background: #475569;
+      color: white;
+      font-size: 17px;
+      font-weight: bold;
+      margin-bottom: 12px;
+    }
+
+    .gps-box {
+      background: #f8fafc;
+      border-radius: 10px;
+      padding: 13px;
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    .result {
+      margin-top: 15px;
+      padding: 14px;
+      border-radius: 10px;
+      text-align: center;
+      font-weight: bold;
+      display: none;
+    }
+
+    .result.success {
+      display: block;
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .result.error {
+      display: block;
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .queue {
+      background: #fff7ed;
+      color: #9a3412;
+      padding: 13px;
+      border-radius: 10px;
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 15px;
+      display: none;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .footer {
+      text-align: center;
+      color: #64748b;
+      font-size: 13px;
+      padding: 10px;
+    }
+  </style>
 </head>
-<body style="font-family:Arial;text-align:center;padding:40px;">
-  <h1>HWC Attendance</h1>
-  <p>Offline app test</p>
-  <button onclick="alert('App is working!')">
-    Test App
-  </button>
+
+<body>
+
+  <div class="header">
+    <h1>HWC Online Attendance</h1>
+    <p>Health & Wellness Centre</p>
+  </div>
+
+  <div class="container">
+
+    <div id="connectionStatus" class="status">
+      🌐 Internet Connected
+    </div>
+
+    <div id="queueBox" class="queue">
+      📥 Attendance waiting to be synchronized
+    </div>
+
+    <div class="card">
+
+      <h2>Staff Details</h2>
+
+      <div class="staff-info">
+        <div>Staff Name: <strong id="staffName">Loading...</strong></div>
+        <div>Staff ID: <strong id="staffId">—</strong></div>
+        <div>Centre: <strong id="centreName">Loading...</strong></div>
+      </div>
+
+    </div>
+
+    <div class="card">
+
+      <h2>Today's Attendance</h2>
+
+      <label class="attendance-option">
+        <input type="radio" name="attendance" value="PRESENT"
+               onchange="attendanceChanged()">
+        🟢 PRESENT
+      </label>
+
+      <label class="attendance-option">
+        <input type="radio" name="attendance" value="FIELD DUTY"
+               onchange="attendanceChanged()">
+        🔵 FIELD DUTY
+      </label>
+
+      <label class="attendance-option">
+        <input type="radio" name="attendance" value="LEAVE"
+               onchange="attendanceChanged()">
+        🟡 LEAVE
+      </label>
+
+      <div id="fieldSection" class="hidden">
+
+        <label class="field-label">Field Location</label>
+
+        <input
+          type="text"
+          id="fieldLocation"
+          placeholder="Enter field location"
+        >
+
+        <label class="field-label">Field Remarks</label>
+
+        <textarea
+          id="fieldRemarks"
+          placeholder="Enter details of field duty"
+        ></textarea>
+
+      </div>
+
+      <div id="leaveSection" class="hidden">
+
+        <label class="field-label">Leave Type</label>
+
+        <select id="leaveType">
+          <option value="">Select Leave Type</option>
+          <option value="Casual Leave">Casual Leave</option>
+          <option value="Earned Leave">Earned Leave</option>
+          <option value="Medical Leave">Medical Leave</option>
+          <option value="Other">Other</option>
+        </select>
+
+        <label class="field-label">Leave Reason</label>
+
+        <textarea
+          id="leaveReason"
+          placeholder="Enter leave reason"
+        ></textarea>
+
+      </div>
+
+    </div>
+
+    <div class="card">
+
+      <h2>GPS Location</h2>
+
+      <button class="gps-button" onclick="getGPS()">
+        📍 Get My Location
+      </button>
+
+      <div id="gpsBox" class="gps-box">
+        GPS location not yet obtained.
+      </div>
+
+    </div>
+
+    <div class="card">
+
+      <button class="submit-button" onclick="submitAttendance()">
+        Submit Attendance
+      </button>
+
+      <div id="result" class="result"></div>
+
+    </div>
+
+    <div class="footer">
+      HWC Online Attendance System
+      <br>
+      Offline attendance will be stored on this device.
+    </div>
+
+  </div>
+
+
+<script>
+
+const DEVICE_ID_KEY = "HWC_DEVICE_ID";
+const OFFLINE_ATTENDANCE_KEY = "HWC_OFFLINE_ATTENDANCE";
+
+let currentGPS = null;
+
+
+/* -------------------------------
+   DEVICE ID
+-------------------------------- */
+
+function getDeviceId() {
+
+  let deviceId = localStorage.getItem(DEVICE_ID_KEY);
+
+  if (!deviceId) {
+
+    deviceId =
+      "HWC-" +
+      Date.now() +
+      "-" +
+      Math.random().toString(36).substring(2, 10);
+
+    localStorage.setItem(DEVICE_ID_KEY, deviceId);
+  }
+
+  return deviceId;
+}
+
+
+/* -------------------------------
+   CONNECTION STATUS
+-------------------------------- */
+
+function updateConnectionStatus() {
+
+  const box = document.getElementById("connectionStatus");
+
+  if (navigator.onLine) {
+
+    box.className = "status";
+    box.innerText = "🌐 Internet Connected";
+
+    syncOfflineAttendance();
+
+  } else {
+
+    box.className = "status offline";
+    box.innerText = "📴 Offline Mode";
+  }
+
+  updateQueueDisplay();
+}
+
+
+window.addEventListener("online", updateConnectionStatus);
+window.addEventListener("offline", updateConnectionStatus);
+
+
+/* -------------------------------
+   ATTENDANCE TYPE
+-------------------------------- */
+
+function attendanceChanged() {
+
+  const selected =
+    document.querySelector('input[name="attendance"]:checked');
+
+  document.getElementById("fieldSection").classList.add("hidden");
+  document.getElementById("leaveSection").classList.add("hidden");
+
+  if (!selected) return;
+
+  if (selected.value === "FIELD DUTY") {
+
+    document
+      .getElementById("fieldSection")
+      .classList.remove("hidden");
+
+  }
+
+  if (selected.value === "LEAVE") {
+
+    document
+      .getElementById("leaveSection")
+      .classList.remove("hidden");
+
+  }
+}
+
+
+/* -------------------------------
+   GPS
+-------------------------------- */
+
+function getGPS() {
+
+  const gpsBox = document.getElementById("gpsBox");
+
+  if (!navigator.geolocation) {
+
+    gpsBox.innerText =
+      "GPS is not supported on this device.";
+
+    return;
+  }
+
+  gpsBox.innerText =
+    "📍 Getting GPS location...";
+
+  navigator.geolocation.getCurrentPosition(
+
+    function(position) {
+
+      currentGPS = {
+
+        latitude: position.coords.latitude,
+
+        longitude: position.coords.longitude,
+
+        accuracy: position.coords.accuracy
+
+      };
+
+      gpsBox.innerHTML =
+        "Latitude: " +
+        currentGPS.latitude.toFixed(6) +
+        "<br>" +
+        "Longitude: " +
+        currentGPS.longitude.toFixed(6) +
+        "<br>" +
+        "Accuracy: " +
+        Math.round(currentGPS.accuracy) +
+        " metres";
+
+    },
+
+    function(error) {
+
+      gpsBox.innerText =
+        "GPS Error: " + error.message;
+
+      currentGPS = null;
+
+    },
+
+    {
+      enableHighAccuracy: true,
+      timeout: 30000,
+      maximumAge: 0
+    }
+
+  );
+}
+
+
+/* -------------------------------
+   OFFLINE STORAGE
+-------------------------------- */
+
+function saveOfflineAttendance(data) {
+
+  let pending = [];
+
+  try {
+
+    pending =
+      JSON.parse(
+        localStorage.getItem(
+          OFFLINE_ATTENDANCE_KEY
+        ) || "[]"
+      );
+
+  } catch (error) {
+
+    pending = [];
+
+  }
+
+  pending.push(data);
+
+  localStorage.setItem(
+    OFFLINE_ATTENDANCE_KEY,
+    JSON.stringify(pending)
+  );
+
+  updateQueueDisplay();
+}
+
+
+/* -------------------------------
+   QUEUE DISPLAY
+-------------------------------- */
+
+function updateQueueDisplay() {
+
+  let pending = [];
+
+  try {
+
+    pending =
+      JSON.parse(
+        localStorage.getItem(
+          OFFLINE_ATTENDANCE_KEY
+        ) || "[]"
+      );
+
+  } catch (error) {
+
+    pending = [];
+
+  }
+
+  const box =
+    document.getElementById("queueBox");
+
+  if (pending.length > 0) {
+
+    box.style.display = "block";
+
+    box.innerText =
+      "📥 " +
+      pending.length +
+      " attendance record(s) waiting for synchronization.";
+
+  } else {
+
+    box.style.display = "none";
+
+  }
+}
+
+
+/* -------------------------------
+   SYNC OFFLINE RECORDS
+-------------------------------- */
+
+function syncOfflineAttendance() {
+
+  /*
+    Backend connection will be added
+    in the next stage.
+  */
+
+  updateQueueDisplay();
+}
+
+
+/* -------------------------------
+   SUBMIT ATTENDANCE
+-------------------------------- */
+
+function submitAttendance() {
+
+  const result =
+    document.getElementById("result");
+
+  const selected =
+    document.querySelector(
+      'input[name="attendance"]:checked'
+    );
+
+  if (!selected) {
+
+    showResult(
+      "Please select PRESENT, FIELD DUTY or LEAVE.",
+      false
+    );
+
+    return;
+  }
+
+
+  const status = selected.value;
+
+
+  if (!currentGPS) {
+
+    showResult(
+      "Please get your GPS location first.",
+      false
+    );
+
+    return;
+  }
+
+
+  const fieldLocation =
+    document
+      .getElementById("fieldLocation")
+      .value
+      .trim();
+
+
+  const fieldRemarks =
+    document
+      .getElementById("fieldRemarks")
+      .value
+      .trim();
+
+
+  const leaveType =
+    document
+      .getElementById("leaveType")
+      .value
+      .trim();
+
+
+  const leaveReason =
+    document
+      .getElementById("leaveReason")
+      .value
+      .trim();
+
+
+  if (status === "FIELD DUTY") {
+
+    if (!fieldLocation || !fieldRemarks) {
+
+      showResult(
+        "Field Location and Field Remarks are required.",
+        false
+      );
+
+      return;
+    }
+  }
+
+
+  if (status === "LEAVE") {
+
+    if (!leaveType || !leaveReason) {
+
+      showResult(
+        "Leave Type and Leave Reason are required.",
+        false
+      );
+
+      return;
+    }
+  }
+
+
+  const attendanceData = {
+
+    status: status,
+
+    deviceId: getDeviceId(),
+
+    submittedAt:
+      new Date().toISOString(),
+
+    latitude:
+      currentGPS.latitude,
+
+    longitude:
+      currentGPS.longitude,
+
+    accuracy:
+      currentGPS.accuracy,
+
+    fieldLocation:
+      fieldLocation,
+
+    fieldRemarks:
+      fieldRemarks,
+
+    leaveType:
+      leaveType,
+
+    leaveReason:
+      leaveReason
+
+  };
+
+
+  /*
+    When there is no internet,
+    PRESENT and FIELD DUTY are
+    stored locally.
+  */
+
+  if (!navigator.onLine) {
+
+    if (
+      status === "PRESENT" ||
+      status === "FIELD DUTY"
+    ) {
+
+      attendanceData.offlineSync = true;
+
+      saveOfflineAttendance(
+        attendanceData
+      );
+
+      showResult(
+        "📴 No internet. Attendance has been saved on this device and will synchronize when internet returns.",
+        true
+      );
+
+      return;
+
+    }
+
+
+    showResult(
+      "Internet is required for Leave submission.",
+      false
+    );
+
+    return;
+
+  }
+
+
+  /*
+    Backend connection will be connected
+    after the PWA interface is tested.
+  */
+
+  showResult(
+    "The attendance interface is ready. Backend connection will be connected in the next step.",
+    true
+  );
+
+}
+
+
+/* -------------------------------
+   RESULT MESSAGE
+-------------------------------- */
+
+function showResult(message, success) {
+
+  const result =
+    document.getElementById("result");
+
+  result.innerText = message;
+
+  result.className =
+    success
+      ? "result success"
+      : "result error";
+
+}
+
+
+/* -------------------------------
+   INITIALIZATION
+-------------------------------- */
+
+document.addEventListener(
+  "DOMContentLoaded",
+  function() {
+
+    getDeviceId();
+
+    updateConnectionStatus();
+
+    updateQueueDisplay();
+
+    /*
+      Staff details will be loaded
+      from the secure backend
+      in the next stage.
+    */
+
+    document.getElementById("staffName")
+      .innerText = "Not connected";
+
+    document.getElementById("staffId")
+      .innerText = "—";
+
+    document.getElementById("centreName")
+      .innerText = "Not connected";
+
+  }
+);
+
+</script>
+
 </body>
 </html>
