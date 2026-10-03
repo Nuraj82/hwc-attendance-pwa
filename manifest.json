@@ -1,1 +1,23 @@
 
+{
+  "name": "HWC Online Attendance",
+  "short_name": "HWC Attendance",
+  "description": "Health & Wellness Centre Attendance System",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0b57d0",
+  "icons": [
+    {
+      "src": "hwc-logo-exact.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "hwc-logo-exact.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
